@@ -2,6 +2,29 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+const gradientShader = {
+  uniforms: {
+    color1: { value: new THREE.Color(0x0000ff) }, // Start color of the gradient (blue)
+    color2: { value: new THREE.Color(0xff0000) }  // End color of the gradient (red)
+  },
+  vertexShader: `
+    varying vec3 vPosition;
+    void main() {
+      vPosition = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vPosition;
+    uniform vec3 color1;
+    uniform vec3 color2;
+    void main() {
+      float gradient = (vPosition.y + 1.0) * 0.5; // Simple vertical gradient
+      gl_FragColor = vec4(mix(color1, color2, gradient), 1.0);
+    }
+  `
+};
+
 const ThreeScene = () => {
   const threeContainerRef = useRef();
 
@@ -31,25 +54,12 @@ const ThreeScene = () => {
     controls.autoRotate = true; // Enable auto-rotate
     controls.autoRotateSpeed = 4.0; // Speed of auto-rotate
 
-    // Load texture
-    const textureLoader = new THREE.TextureLoader();
-    const texture = textureLoader.load('/goku.jpg', (texture) => {
-      texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Improve texture quality with anisotropic filtering
-    });
+    // Gradient shader material
+    const gradientMaterial = new THREE.ShaderMaterial(gradientShader);
 
-    // Create materials for each face (using the same texture for simplicity)
-    const materials = [
-      new THREE.MeshBasicMaterial({ map: texture }), // right face
-      new THREE.MeshBasicMaterial({ map: texture }), // left face
-      new THREE.MeshBasicMaterial({ map: texture }), // top face
-      new THREE.MeshBasicMaterial({ map: texture }), // bottom face
-      new THREE.MeshBasicMaterial({ map: texture }), // front face
-      new THREE.MeshBasicMaterial({ map: texture }), // back face
-    ];
-
-    // Cube with smooth geometry and image texture
+    // Cube with gradient shader
     const geometry = new THREE.BoxGeometry(1, 1, 1, 64, 64, 64); // Higher subdivisions for smoother appearance
-    const cube = new THREE.Mesh(geometry, materials);
+    const cube = new THREE.Mesh(geometry, gradientMaterial);
     scene.add(cube);
 
     // Set initial rotation
