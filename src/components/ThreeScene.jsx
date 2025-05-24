@@ -57,22 +57,23 @@ const ThreeScene = () => {
     const currentRef = threeContainerRef.current; // Capture ref for cleanup
     // Scene
     const scene = new THREE.Scene();
-    // No scene.background when using starfield sphere
+    scene.background = new THREE.Color(0x333333); // Dark grey background
 
     // Camera
     const camera = new THREE.PerspectiveCamera(
-      25,
-      currentRef.clientWidth / currentRef.clientHeight,
-      0.1,
-      1000
+      25, // fov
+      currentRef.clientWidth / currentRef.clientHeight, // aspect
+      0.1, // near
+      1000 // far
     );
-    camera.position.z = 20; // Adjusted camera position
+    camera.position.set(0, 0, 25); // Explicitly position camera
+    camera.lookAt(0, 0, 0); // Look at origin
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(currentRef.clientWidth, currentRef.clientHeight);
-    renderer.toneMapping = THREE.ReinhardToneMapping; // Optional: for better bloom
-    renderer.outputColorSpace = THREE.SRGBColorSpace; // Optional: for better bloom
+    // renderer.toneMapping = THREE.ReinhardToneMapping; // Commented out for simplification
+    // renderer.outputColorSpace = THREE.SRGBColorSpace; // Commented out for simplification
     currentRef.appendChild(renderer.domElement);
 
     // Controls
@@ -81,94 +82,94 @@ const ThreeScene = () => {
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.rotateSpeed = 0.1;
-    controls.autoRotate = true; // Enable auto-rotate
-    controls.autoRotateSpeed = 4.0; // Speed of auto-rotate
+    controls.autoRotate = false; // Disable auto-rotate
+    // controls.autoRotateSpeed = 4.0; // Commented out
 
     // Ambient light
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Reduced ambient light intensity
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Increased intensity for testing
     scene.add(ambientLight);
 
     // Point light (Sun)
-    const pointLight = new THREE.PointLight(0xffffff, 1.5, 2000); // Increased range
+    const pointLight = new THREE.PointLight(0xffffff, 2.0, 2000); // Increased intensity for testing
     pointLight.position.set(0, 0, 0);
     scene.add(pointLight);
 
     const textureLoader = new THREE.TextureLoader();
-    const clickableMeshes = [];
+    const clickableMeshes = []; // Kept for now, but bodies using it are commented out
     const sunPosition = new THREE.Vector3(0, 0, 0);
 
-    // Starfield Background
-    const starfieldTexture = textureLoader.load('https://www.solarsystemscope.com/textures/download/2k_stars_milky_way.jpg');
-    const starfieldGeometry = new THREE.SphereGeometry(500, 64, 64);
-    const starfieldMaterial = new THREE.MeshBasicMaterial({
-      map: starfieldTexture,
-      side: THREE.BackSide,
-    });
-    const starfield = new THREE.Mesh(starfieldGeometry, starfieldMaterial);
-    scene.add(starfield);
+    // Starfield Background - COMMENTED OUT
+    // const starfieldTexture = textureLoader.load('https://www.solarsystemscope.com/textures/download/2k_stars_milky_way.jpg');
+    // const starfieldGeometry = new THREE.SphereGeometry(500, 64, 64);
+    // const starfieldMaterial = new THREE.MeshBasicMaterial({
+    //   map: starfieldTexture,
+    //   side: THREE.BackSide,
+    // });
+    // const starfield = new THREE.Mesh(starfieldGeometry, starfieldMaterial);
+    // scene.add(starfield);
 
-    // GLTF Loader for Spaceship
-    const gltfLoader = new GLTFLoader();
-    gltfLoader.load(
-      'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf', // Placeholder model
-      (gltf) => {
-        const spaceship = gltf.scene;
-        spaceship.scale.set(0.5, 0.5, 0.5);
-        spaceship.position.set(0, 1, 10); // Positioned in front of camera, slightly above sun
-        scene.add(spaceship);
-      },
-      undefined, // onProgress callback (optional)
-      (error) => {
-        console.error('An error happened loading the GLTF model:', error);
-      }
-    );
+    // GLTF Loader for Spaceship - COMMENTED OUT
+    // const gltfLoader = new GLTFLoader();
+    // gltfLoader.load(
+    //   'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf', // Placeholder model
+    //   (gltf) => {
+    //     const spaceship = gltf.scene;
+    //     spaceship.scale.set(0.5, 0.5, 0.5);
+    //     spaceship.position.set(0, 1, 10); // Positioned in front of camera, slightly above sun
+    //     scene.add(spaceship);
+    //   },
+    //   undefined, // onProgress callback (optional)
+    //   (error) => {
+    //     console.error('An error happened loading the GLTF model:', error);
+    //   }
+    // );
 
     const celestialBodiesData = [
       {
         name: 'Sun',
         textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_sun.jpg',
-        size: 3,
+        size: 5, // Increased size
         position: { x: 0, y: 0, z: 0 },
         materialType: 'MeshBasicMaterial',
-        isClickable: false,
-        emissive: 0xffddaa, // Sun emissive color
+        isClickable: false, // Sun is not clickable in this context
+        emissive: 0xffddaa,
         emissiveIntensity: 1,
       },
-      {
-        name: 'Earth',
-        textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg',
-        size: 1,
-        position: { x: 5, y: 0, z: 0 },
-        materialType: 'MeshStandardMaterial',
-        isClickable: true,
-      },
-      {
-        name: 'Mars',
-        textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_mars.jpg',
-        size: 0.7,
-        position: { x: 8, y: 0, z: 0 },
-        materialType: 'MeshStandardMaterial',
-        isClickable: true,
-      },
-      {
-        name: 'Jupiter',
-        textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_jupiter.jpg',
-        size: 2,
-        position: { x: 12, y: 0, z: 0 },
-        materialType: 'MeshStandardMaterial',
-        isClickable: true,
-      },
-      {
-        name: 'Moon',
-        textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_moon.jpg',
-        size: 0.3,
-        position: { x: 5.5, y: 0, z: 0 }, // Positioned near Earth
-        materialType: 'MeshStandardMaterial',
-        isClickable: true,
-      },
+      // {
+      //   name: 'Earth',
+      //   textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg',
+      //   size: 1,
+      //   position: { x: 5, y: 0, z: 0 },
+      //   materialType: 'MeshStandardMaterial',
+      //   isClickable: true,
+      // },
+      // {
+      //   name: 'Mars',
+      //   textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_mars.jpg',
+      //   size: 0.7,
+      //   position: { x: 8, y: 0, z: 0 },
+      //   materialType: 'MeshStandardMaterial',
+      //   isClickable: true,
+      // },
+      // {
+      //   name: 'Jupiter',
+      //   textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_jupiter.jpg',
+      //   size: 2,
+      //   position: { x: 12, y: 0, z: 0 },
+      //   materialType: 'MeshStandardMaterial',
+      //   isClickable: true,
+      // },
+      // {
+      //   name: 'Moon',
+      //   textureUrl: 'https://www.solarsystemscope.com/textures/download/2k_moon.jpg',
+      //   size: 0.3,
+      //   position: { x: 5.5, y: 0, z: 0 }, // Positioned near Earth
+      //   materialType: 'MeshStandardMaterial',
+      //   isClickable: true,
+      // },
     ];
 
-    celestialBodiesData.forEach(bodyData => {
+    celestialBodiesData.forEach(bodyData => { // This will now only process the Sun
       const geometry = new THREE.SphereGeometry(bodyData.size, 32, 32);
       const texture = textureLoader.load(bodyData.textureUrl);
       let material;
@@ -236,31 +237,32 @@ const ThreeScene = () => {
       if (controlsRef.current) {
         controlsRef.current.update();
       }
-      // renderer.render(scene, camera); // Replaced by composer
-      if (composerRef.current) {
-        composerRef.current.render();
-      }
+      renderer.render(scene, camera); // Reverted to direct rendering
+      // if (composerRef.current) { // Commented out post-processing
+      //   composerRef.current.render();
+      // }
     };
 
-    // Post-processing - Bloom
-    const renderScene = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(currentRef.clientWidth, currentRef.clientHeight), 1.5, 0.4, 0.85);
-    bloomPass.threshold = 0.21; // Adjust these values for desired bloom effect
-    bloomPass.strength = 1.2;  // Strength of the bloom
-    bloomPass.radius = 0.55;   // Radius of the bloom glow
+    // Post-processing - Bloom - COMMENTED OUT
+    // const renderScene = new RenderPass(scene, camera);
+    // const bloomPass = new UnrealBloomPass(new THREE.Vector2(currentRef.clientWidth, currentRef.clientHeight), 1.5, 0.4, 0.85);
+    // bloomPass.threshold = 0.21;
+    // bloomPass.strength = 1.2;
+    // bloomPass.radius = 0.55;
 
-    const composer = new EffectComposer(renderer);
-    composer.addPass(renderScene);
-    composer.addPass(bloomPass);
-    composerRef.current = composer; // Store composer in ref
+    // const composer = new EffectComposer(renderer);
+    // composer.addPass(renderScene);
+    // composer.addPass(bloomPass);
+    // composerRef.current = composer; // Commented out
 
     // Handle window resize
     const handleResize = () => {
+      if (!currentRef) return; // Ensure currentRef is still valid
       const { clientWidth, clientHeight } = currentRef;
       camera.aspect = clientWidth / clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(clientWidth, clientHeight);
-      composer.setSize(clientWidth, clientHeight); // Update composer size
+      // composer.setSize(clientWidth, clientHeight); // Commented out post-processing
     };
     window.addEventListener('resize', handleResize);
 
